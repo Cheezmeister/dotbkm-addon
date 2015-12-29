@@ -13,7 +13,9 @@ Read YAML. TODO this is broken. Something about commonjs/buffer
     # Npm =
     #   yaml: require 'js-yaml'
 
-Check this path for data. One day we'll be clever about allowing trees and looking at 
+## Read Files
+
+Check this path for data. One day we'll be clever about allowing trees and looking at
 file extensions to allow YAML. For now, A JSON file named `.bkm` will do.
 
     path = '~/.bkm'
@@ -32,6 +34,8 @@ Bail if it can't be parsed as JSON.
 
       obj = JSON.parse contents
       return unless obj
+
+## Save Bookmarks
 
 Construct bookmarks for FF.
 
