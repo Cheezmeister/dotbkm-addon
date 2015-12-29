@@ -1,25 +1,36 @@
+# .bkm
 
-# a dummy function, to show how tests work.
-# to see how to test this function, look at test/test-index.js
-    self = require('sdk/self')
+## Dependencies
 
-    dummy = (text, callback) ->
-      callback text
-      return
+From Mozilla, require `io/file` and `places/bookmarks`, for obvious reasons.
 
-    handleClick = (state) ->
-      tabs.open 'http://www.mozilla.org/'
-      return
+    SDK =
+      io: file: require 'sdk/io/file'
+      places: bookmarks: require 'sdk/places/bookmarks'
 
-    exports.dummy = dummy
-    buttons = require('sdk/ui/button/action')
-    tabs = require('sdk/tabs')
-    button = buttons.ActionButton(
-      id: 'mozilla-link'
-      label: 'Visit Mozilla'
-      icon:
-        '16': './icon-16.png'
-        '32': './icon-32.png'
-        '64': './icon-64.png'
-      onClick: handleClick)
+Read YAML. TODO this is broken. Something about commonjs/buffer
 
+    # Npm =
+    #   yaml: require 'js-yaml'
+
+Check this path for data
+
+    path = '~/.bkm'
+
+    if SDK.io.file.exists path
+      console.log 'yay'
+      contents = SDK.io.file.read path
+      if contents
+        console.log "Contents: #{contents}"
+        obj = JSON.parse contents
+        if obj
+          mastergroup = SDK.places.bookmarks.Group title: 'dotbkm'
+          bookmarks = []
+          for k,v of obj
+            bookmarks.push SDK.places.bookmarks.Bookmark(title: k, url: v, group: mastergroup)
+          if bookmarks.length > 0
+            emitter = SDK.places.bookmarks.save(bookmarks)
+            emitter.on 'data', (saved, input) ->
+              console.log '.'
+            emitter.on 'end', (saves, inputs) ->
+              console.log "Saved #{saves.length} items"

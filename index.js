@@ -1,1 +1,1 @@
-exports = require('js/dotbkm');
+exports = require('./js/dotbkm');
