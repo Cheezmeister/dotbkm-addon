@@ -83,7 +83,7 @@ Prefer YAML over JSON, if present.
       if SDK.io.file.exists "#{path}.yaml"
         path = "#{path}.yaml"
       else if SDK.io.file.exists "#{path}.json"
-        path = "#{path}.yaml"
+        path = "#{path}.json"
 
 Bail if the file doesn't exist.
 
