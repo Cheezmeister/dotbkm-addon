@@ -27,6 +27,10 @@ Check this path for data. It may have a `json` or `yaml` extension.  If no exten
 
 ### Helper Methods
 
+Check if an object is an array. From the [CoffeeScript Cookbook](https://coffeescript-cookbook.github.io/chapters/arrays/check-type-is-array).
+
+    typeIsArray = Array.isArray || ( value ) -> return {}.toString.call( value ) is '[object Array]'
+
 Normalize a URL to contain a single trailing slash if a top-level page.
 
     normalize = (url) ->
@@ -35,15 +39,29 @@ Normalize a URL to contain a single trailing slash if a top-level page.
 Construct a typed Mozilla `Bookmark`
 
     makeBookmark = (title, url, group) ->
-      console.log "URL: #{url}"
       url = normalize url
-      console.log "URL: #{url} (normalized)"
-      console.log "Title: #{title}"
       bookmarks.push SDK.places.bookmarks.Bookmark (
         title: title,
         url: url,
         group: group
       )
+
+Recurse through an object tree of untyped bookmarks, creating typed `Group`s as we go, finally yielding a flat list of typed `Bookmark`s.
+
+As a special case, accept arrays keyed with `UNTITLED`. Each element is added as a `Bookmark` with no title. This is useful for creating compact buttons in the bookmarks toolbar that show just a favicon.
+
+    makeBookmarksR = (obj, group) ->
+      console.log "Recursing with #{group.title}"
+      for k,v of obj
+        if typeof v == 'string'
+          makeBookmark k, v, group
+        else if k == 'UNTITLED' and typeIsArray v
+          makeBookmark '', subv, group for subv in v
+        else if typeof v == 'object' and v != null
+          subgroup = SDK.places.bookmarks.Group title: k, group: group
+          makeBookmarksR v, subgroup
+        else
+          console.warn "Didn't recognize '#{k}: #{v}' as a bookmark. Ignoring"
 
 Get the group ancestry of a bookmark.
 
@@ -54,17 +72,6 @@ Get the group ancestry of a bookmark.
         else
           ancestryR(group.parent) + '->' + group.title
       ancestryR bookmark.group
-
-Recurse through an object tree of untyped bookmarks, creating typed `Group`s as we go, finally yielding a flat list of typed `Bookmark`s.
-
-    makeBookmarksR = (obj, group) ->
-      console.log "Recursing with #{group.title}"
-      for k,v of obj
-        if typeof v == 'string'
-          makeBookmark k, v, group
-        else if typeof v == 'object' and v != null
-          subgroup = SDK.places.bookmarks.Group title: k, group: group
-          makeBookmarksR v, subgroup
 
 ### Exports
 
@@ -79,7 +86,7 @@ These exist mainly for test access.
     do ->
 
 Prefer YAML over JSON, if present.
-      
+
       if SDK.io.file.exists "#{path}.yaml"
         path = "#{path}.yaml"
       else if SDK.io.file.exists "#{path}.json"
@@ -115,7 +122,7 @@ Handle loose bookmarks (no group specified). These are implitly treated as unsor
 
       makeBookmarksR tree, SDK.places.bookmarks.Group title: 'dotbkm'
 
-Prune bookmarks that already exist. For our purposes this means that an existing bookmark has the same title, URL, and group ancestry as the one we are prospectively adding. Two bookmark in the same group, with the same name and the same URL is not prevented by Firefox, but I don't see much practical use in it. 
+Prune bookmarks that already exist. For our purposes this means that an existing bookmark has the same title, URL, and group ancestry as the one we are prospectively adding. Two bookmark in the same group, with the same name and the same URL is not prevented by Firefox, but I don't see much practical use in it.
 
       SDK.places.bookmarks.search({}).on 'end', (results) ->
         pruneBookmark = (existing) ->
@@ -128,7 +135,7 @@ Prune bookmarks that already exist. For our purposes this means that an existing
         bookmarks = pruneBookmark r for r in results
 
 Save them.
- 
+
         console.log JSON.stringify bookmarks
 
         if bookmarks.length > 0
